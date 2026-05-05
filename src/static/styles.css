@@ -28,6 +28,10 @@ header h1 {
   margin-bottom: 10px;
 }
 
+#auth-status {
+  font-weight: bold;
+}
+
 main {
   display: flex;
   flex-wrap: wrap;
@@ -48,6 +52,27 @@ section {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 500px;
+}
+
+#auth-container {
+  max-width: 500px;
+}
+
+#auth-container form {
+  margin-bottom: 20px;
+}
+
+#seed-users {
+  border-top: 1px solid #ddd;
+  padding-top: 10px;
+}
+
+#seed-users h4 {
+  margin-bottom: 8px;
+}
+
+#seed-users p {
+  margin-bottom: 4px;
 }
 
 section h3 {
@@ -111,18 +136,18 @@ section h3 {
 }
 
 .delete-btn {
-  background: none;
+  background: #c62828;
   border: none;
-  color: #c62828;
+  color: white;
   cursor: pointer;
-  font-size: 14px;
-  padding: 2px 5px;
+  font-size: 12px;
+  padding: 4px 8px;
   transition: all 0.2s;
   border-radius: 3px;
 }
 
 .delete-btn:hover {
-  background-color: #ffebee;
+  background-color: #ad2323;
 }
 
 .participants-section p {
@@ -164,6 +189,15 @@ button:hover {
   background-color: #3949ab;
 }
 
+button.secondary {
+  margin-left: 8px;
+  background-color: #607d8b;
+}
+
+button.secondary:hover {
+  background-color: #546e7a;
+}
+
 .message {
   margin-top: 20px;
   padding: 10px;
@@ -190,6 +224,12 @@ button:hover {
 
 .hidden {
   display: none;
+}
+
+.helper-text {
+  margin-top: 8px;
+  color: #666;
+  font-size: 14px;
 }
 
 footer {

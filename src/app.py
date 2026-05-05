@@ -1,13 +1,12 @@
-"""
-High School Management System API
+"""High School Management System API."""
 
-A super simple FastAPI application that allows students to view and sign up
-for extracurricular activities at Mergington High School.
-"""
+from typing import Callable
+from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 import os
 from pathlib import Path
 
@@ -77,6 +76,69 @@ activities = {
     }
 }
 
+# In-memory user store with one seeded account for each role.
+users = {
+    "student1": {
+        "password": "studentpass",
+        "email": "student1@mergington.edu",
+        "role": "student",
+    },
+    "clubadmin1": {
+        "password": "clubadminpass",
+        "email": "clubadmin1@mergington.edu",
+        "role": "club_admin",
+    },
+    "federation1": {
+        "password": "federationpass",
+        "email": "federation1@mergington.edu",
+        "role": "federation_admin",
+    },
+}
+
+# token -> username
+active_tokens = {}
+
+
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    email: str
+    role: str = "student"
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+def get_current_user(authorization: str | None = Header(default=None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authorization header")
+
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+
+    username = active_tokens.get(token)
+    if not username or username not in users:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    return {
+        "username": username,
+        "email": users[username]["email"],
+        "role": users[username]["role"],
+        "token": token,
+    }
+
+
+def require_roles(*allowed_roles: str) -> Callable:
+    def dependency(current_user=Depends(get_current_user)):
+        if current_user["role"] not in allowed_roles:
+            raise HTTPException(status_code=403, detail="Insufficient role")
+        return current_user
+
+    return dependency
+
 
 @app.get("/")
 def root():
@@ -88,8 +150,77 @@ def get_activities():
     return activities
 
 
+@app.post("/auth/register")
+def register(payload: RegisterRequest):
+    if payload.username in users:
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    if payload.role not in {"student", "club_admin", "federation_admin"}:
+        raise HTTPException(status_code=400, detail="Invalid role")
+
+    # Self-registration is limited to students; admin roles come from seeded users.
+    if payload.role != "student":
+        raise HTTPException(status_code=403, detail="Only student self-registration is allowed")
+
+    users[payload.username] = {
+        "password": payload.password,
+        "email": payload.email,
+        "role": payload.role,
+    }
+
+    return {
+        "message": "User registered",
+        "username": payload.username,
+        "role": payload.role,
+    }
+
+
+@app.post("/auth/login")
+def login(payload: LoginRequest):
+    user = users.get(payload.username)
+    if not user or user["password"] != payload.password:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    token = str(uuid4())
+    active_tokens[token] = payload.username
+    return {
+        "token": token,
+        "token_type": "bearer",
+        "username": payload.username,
+        "email": user["email"],
+        "role": user["role"],
+    }
+
+
+@app.post("/auth/logout")
+def logout(current_user=Depends(get_current_user)):
+    active_tokens.pop(current_user["token"], None)
+    return {"message": "Logged out"}
+
+
+@app.get("/auth/me")
+def auth_me(current_user=Depends(get_current_user)):
+    return {
+        "username": current_user["username"],
+        "email": current_user["email"],
+        "role": current_user["role"],
+    }
+
+
+@app.get("/admin/summary")
+def admin_summary(
+    current_user=Depends(require_roles("club_admin", "federation_admin")),
+):
+    return {
+        "message": "Admin access granted",
+        "requested_by": current_user["username"],
+        "role": current_user["role"],
+        "activity_count": len(activities),
+    }
+
+
 @app.post("/activities/{activity_name}/signup")
-def signup_for_activity(activity_name: str, email: str):
+def signup_for_activity(activity_name: str, current_user=Depends(get_current_user)):
     """Sign up a student for an activity"""
     # Validate activity exists
     if activity_name not in activities:
@@ -97,6 +228,8 @@ def signup_for_activity(activity_name: str, email: str):
 
     # Get the specific activity
     activity = activities[activity_name]
+
+    email = current_user["email"]
 
     # Validate student is not already signed up
     if email in activity["participants"]:
@@ -111,7 +244,11 @@ def signup_for_activity(activity_name: str, email: str):
 
 
 @app.delete("/activities/{activity_name}/unregister")
-def unregister_from_activity(activity_name: str, email: str):
+def unregister_from_activity(
+    activity_name: str,
+    email: str,
+    current_user=Depends(require_roles("club_admin", "federation_admin")),
+):
     """Unregister a student from an activity"""
     # Validate activity exists
     if activity_name not in activities:
