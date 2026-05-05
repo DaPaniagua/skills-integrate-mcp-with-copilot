@@ -10,9 +10,52 @@
     <header>
       <h1>Mergington High School</h1>
       <h2>Extracurricular Activities</h2>
+      <p id="auth-status">Not logged in</p>
     </header>
 
     <main>
+      <section id="auth-container">
+        <h3>Account</h3>
+
+        <form id="login-form">
+          <h4>Login</h4>
+          <div class="form-group">
+            <label for="login-username">Username:</label>
+            <input type="text" id="login-username" required />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password:</label>
+            <input type="password" id="login-password" required />
+          </div>
+          <button type="submit">Login</button>
+          <button type="button" id="logout-btn" class="secondary">Logout</button>
+        </form>
+
+        <form id="register-form">
+          <h4>Register Student</h4>
+          <div class="form-group">
+            <label for="register-username">Username:</label>
+            <input type="text" id="register-username" required />
+          </div>
+          <div class="form-group">
+            <label for="register-email">Email:</label>
+            <input type="email" id="register-email" required placeholder="your-email@mergington.edu" />
+          </div>
+          <div class="form-group">
+            <label for="register-password">Password:</label>
+            <input type="password" id="register-password" required />
+          </div>
+          <button type="submit">Register</button>
+        </form>
+
+        <div id="seed-users">
+          <h4>Seeded Test Accounts</h4>
+          <p>Student: student1 / studentpass</p>
+          <p>Club Admin: clubadmin1 / clubadminpass</p>
+          <p>Federation Admin: federation1 / federationpass</p>
+        </div>
+      </section>
+
       <section id="activities-container">
         <h3>Available Activities</h3>
         <div id="activities-list">
@@ -25,10 +68,6 @@
         <h3>Sign Up for an Activity</h3>
         <form id="signup-form">
           <div class="form-group">
-            <label for="email">Student Email:</label>
-            <input type="email" id="email" required placeholder="your-email@mergington.edu" />
-          </div>
-          <div class="form-group">
             <label for="activity">Select Activity:</label>
             <select id="activity" required>
               <option value="">-- Select an activity --</option>
@@ -37,6 +76,13 @@
           </div>
           <button type="submit">Sign Up</button>
         </form>
+        <p class="helper-text">Students must be logged in to sign up.</p>
+      </section>
+
+      <section id="admin-container" class="hidden">
+        <h3>Admin Tools</h3>
+        <p id="admin-summary">Admin access unavailable.</p>
+        <p class="helper-text">Only club admins and federation admins can remove participants.</p>
         <div id="message" class="hidden"></div>
       </section>
     </main>
